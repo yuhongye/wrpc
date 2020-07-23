@@ -3,15 +3,13 @@ package com.cxy.wrpc.client;
 import com.cxy.wrpc.protocol.RpcRequest;
 import com.cxy.wrpc.registry.ServiceDiscovery;
 import com.cxy.wrpc.utils.ClassTypes;
+import com.cxy.wrpc.utils.GlobleExecutor;
 import com.google.common.base.Preconditions;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.cglib.proxy.Enhancer;
 
 import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 创建rpc proxy的入口
@@ -19,8 +17,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @AllArgsConstructor
 public class RpcClient {
-    private static ThreadPoolExecutor executor = new ThreadPoolExecutor(16, 16, 600L, TimeUnit.SECONDS, new ArrayBlockingQueue<>(65536));
-
     private ServiceDiscovery serviceDiscovery;
 
     public RpcClient(String registryServerAddress) {
@@ -57,12 +53,8 @@ public class RpcClient {
         return handler.sendRequest(request);
     }
 
-    public static void submit(Runnable task) {
-        executor.submit(task);
-    }
-
     public void stop() {
-        executor.shutdown();
+        GlobleExecutor.stop();
         serviceDiscovery.stop();
         ConnectionManager.getInstance().stop();
     }

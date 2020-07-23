@@ -15,6 +15,10 @@ public class RpcResponse {
     private String error;
     private Object result;
 
+    public RpcResponse(String requestId) {
+        this.requestId = requestId;
+    }
+
     public boolean isOK() {
         return !isError();
     }

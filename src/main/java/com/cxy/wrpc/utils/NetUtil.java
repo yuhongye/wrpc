@@ -17,4 +17,8 @@ public final class NetUtil {
 
         return Optional.empty();
     }
+
+    public static String hostPost(InetSocketAddress address) {
+        return address.getHostName() + ":" + address.getPort();
+    }
 }

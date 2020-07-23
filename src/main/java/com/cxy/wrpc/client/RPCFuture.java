@@ -2,6 +2,7 @@ package com.cxy.wrpc.client;
 
 import com.cxy.wrpc.protocol.RpcRequest;
 import com.cxy.wrpc.protocol.RpcResponse;
+import com.cxy.wrpc.utils.GlobleExecutor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -101,7 +102,7 @@ public class RPCFuture implements Future<Object> {
 
     private void runCallback(final RpcCallback callback) {
         final RpcResponse res = this.response;
-        RpcClient.submit(() -> {
+        GlobleExecutor.submit(() -> {
             if (res.isOK()) {
                 callback.success(res.getResult());
             } else {
