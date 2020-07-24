@@ -18,12 +18,14 @@ public class RpcDecoder<T> extends ByteToMessageDecoder {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         if (in.readableBytes() < 4) {
+            log.debug("receive bytes length[{}] too small.", in.readableBytes());
             return;
         }
         in.markReaderIndex();
         int dataLength = in.readInt();
         // 不够，需要继续累积
         if (in.readableBytes() < dataLength) {
+            log.debug("receive bytes length[{}] too small.", in.readableBytes());
             in.resetReaderIndex();
             return;
         }

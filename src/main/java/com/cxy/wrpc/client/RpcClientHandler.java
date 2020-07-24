@@ -44,13 +44,21 @@ public class RpcClientHandler extends SimpleChannelInboundHandler<RpcResponse> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, RpcResponse response) throws Exception {
-        log.info("receive response: {}", response);
+        log.info("===========receive response: {}", response);
         String requestId = response.getRequestId();
         RPCFuture future = pendingRpc.get(requestId);
         if (future != null) {
             pendingRpc.remove(requestId);
             future.done(response);
         }
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        log.info("Channel Inactive. still wait result request number: {}", pendingRpc.size());
+        pendingRpc.forEach((reqId, f) -> f.done(new RpcResponse(reqId, "连接断开")));
+        pendingRpc.clear();
+        ctx.fireChannelActive();
     }
 
     @Override

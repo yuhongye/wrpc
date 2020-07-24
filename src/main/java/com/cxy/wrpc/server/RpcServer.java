@@ -18,6 +18,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
@@ -66,6 +68,7 @@ public class RpcServer {
                                 .addLast(new LengthFieldBasedFrameDecoder(65536, 0, 4, 0, 0))
                                 .addLast(new RpcDecoder<>(RpcRequest.class, Serializer.create()))
                                 .addLast(new RpcHandler(serviceMap))
+                                .addLast(new LoggingHandler(LogLevel.DEBUG))
                                 .addLast(new RpcEncoder(Serializer.create()));
                     }
                 })
@@ -104,6 +107,7 @@ public class RpcServer {
         if (workerGroup != null) {
             workerGroup.shutdownGracefully();
         }
+        registry.close();
         GlobleExecutor.stop();
     }
 }

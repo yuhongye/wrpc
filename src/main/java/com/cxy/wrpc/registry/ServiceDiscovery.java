@@ -34,9 +34,11 @@ public class ServiceDiscovery {
 
     private ZooKeeper connectZookeeper() {
         try {
+            log.info("will connect zookeeper server: {}", registryAddress);
             ZooKeeper zk = new ZooKeeper(registryAddress, Constant.ZK_SESSION_TIMEOUT, event -> {
                 if (event.getState() == Watcher.Event.KeeperState.SyncConnected) {
                     latch.countDown();
+                    log.info("connect zookeeper server success.");
                 }
             });
             latch.await();

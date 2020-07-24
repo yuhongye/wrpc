@@ -13,35 +13,40 @@ import java.util.concurrent.CountDownLatch;
  */
 @Slf4j
 public class ServiceRegistry {
-    private CountDownLatch latch = new CountDownLatch(1);
-
     private String registryAddress;
+    private ZooKeeper zk;
 
     public ServiceRegistry(String registryAddress) {
         this.registryAddress = registryAddress;
+        zk = connectZookeeper();
     }
 
     public void register(String data) {
         if (data != null) {
-            ZooKeeper zk = connectZookeeper();
             addRootNodeIfAbsent(zk);
             createNode(zk, data);
-            try {
-                zk.close();
-            } catch (InterruptedException e) {
-                log.error("close zk failed, skip it.", e);
-            }
+        }
+    }
+
+    public void close() {
+        try {
+            zk.close();
+        } catch (InterruptedException e) {
+            log.error("close zk failed, skip it.", e);
         }
     }
 
     private ZooKeeper connectZookeeper() {
         try {
+            CountDownLatch latch = new CountDownLatch(1);
+            log.info("will connect zookeeper[{}] server.", registryAddress);
             ZooKeeper zk = new ZooKeeper(registryAddress, Constant.ZK_SESSION_TIMEOUT, event -> {
                 if (event.getState() == Watcher.Event.KeeperState.SyncConnected) {
                     latch.countDown();
+                    log.info("connect zookeeper[{}] success.", registryAddress);
                 }
             });
-            latch.wait();
+            latch.await();
             return zk;
         } catch (IOException | InterruptedException e) {
             log.error("connect zookeeper failed.", e);
@@ -52,8 +57,9 @@ public class ServiceRegistry {
     private void addRootNodeIfAbsent(ZooKeeper zk) {
         try {
             Stat s = zk.exists(Constant.ZK_REGISTRY_PATH, false);
-            log.info("registry root node does not exist. will create it......");
+            log.info("zookeeper root node: {}", s);
             if (s == null) {
+                log.info("registry root node does not exist. will create it......");
                 zk.create(Constant.ZK_REGISTRY_PATH, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
                 log.info("create root node success.");
             }

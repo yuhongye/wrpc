@@ -32,8 +32,15 @@ public class RpcHandler extends SimpleChannelInboundHandler<RpcRequest> {
                 response.setError(e.toString());
                 log.error("Rpc Server handle request error.", e);
             }
-            ctx.writeAndFlush(response).addListener(future ->
-                    log.info("Send response for request[{}] success.", request.getRequestId()));
+            log.info("requestId[{}] response: {}", request.getRequestId(), response);
+            ctx.writeAndFlush(response).addListener(future -> {
+                if (future.isSuccess()) {
+                    log.info("Send response for request[{}] success.", request.getRequestId());
+                } else {
+                    log.error("Send response for request[{}] error.", request.getRequestId(), future.cause());
+                    ctx.channel().close();
+                }
+            });
         };
         GlobleExecutor.submit(task);
     }

@@ -19,6 +19,11 @@ public class RpcResponse {
         this.requestId = requestId;
     }
 
+    public RpcResponse(String requestId, String error) {
+        this.requestId = requestId;
+        this.error = error;
+    }
+
     public boolean isOK() {
         return !isError();
     }

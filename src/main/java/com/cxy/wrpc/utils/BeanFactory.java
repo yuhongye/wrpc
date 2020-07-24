@@ -15,7 +15,7 @@ public class BeanFactory {
     public static List<Object> getBeanWithAnnotation(String basePackage, Class<? extends Annotation> annotation) {
         Objenesis objenesis = new ObjenesisStd(true);
         Set<Class<?>> clses = AnnotationScanner.scan(basePackage, annotation);
-        log.info("base package with annotation: {}, classes: {}", basePackage, annotation.getName(),
+        log.info("base package:{}, with annotation: {}", basePackage, annotation.getName(),
                 clses.stream().map(Class::getName).collect(Collectors.joining(",")));
         return clses.stream().map(objenesis::newInstance).collect(Collectors.toList());
     }

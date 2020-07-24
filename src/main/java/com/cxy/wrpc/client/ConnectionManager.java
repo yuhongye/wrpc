@@ -61,6 +61,7 @@ public class ConnectionManager {
             return;
         }
 
+        log.info("update connected server: {}", allServerAddress);
         if (allServerAddress.isEmpty()) {
             clearConnectedInfo();
             return;
@@ -138,18 +139,25 @@ public class ConnectionManager {
         }
     }
 
+    // todo: 优化
     public RpcClientHandler chooseHandler() {
-        readLock.lock();
-        int size = 0;
-        try {
-            while (isRunning && (size = connectedServerNodes.size()) <= 0) {
-                waitingForHandler();
+        while (true) {
+            while (isRunning && connectedServerNodes.isEmpty()) {
+                boolean hasHandler = waitingForHandler();
+                log.info("wait for handler finish, has handler? {}", hasHandler);
             }
-            int index = (int) ((roundRobin.getAndIncrement() + size) % size);
-            log.info("choose server: {}", connectedServerNodes.get(index));
-            return connectedServerNodes.get(index);
-        } finally {
-            readLock.unlock();
+
+            readLock.lock();
+            try {
+                int size = connectedServerNodes.size();
+                if (size > 0) {
+                    int index = (int) ((roundRobin.getAndIncrement() + size) % size);
+                    log.info("choose server: {}", connectedServerNodes.get(index));
+                    return connectedServerNodes.get(index);
+                }
+            } finally {
+                readLock.unlock();
+            }
         }
     }
 
@@ -161,6 +169,7 @@ public class ConnectionManager {
     private boolean waitingForHandler() {
         writeLock.lock();
         try {
+            log.info("time wait for available server.");
             return hasConnection.await(connectedTimeoutMS, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             log.error("Waiting for available node is interrupted!", e);
