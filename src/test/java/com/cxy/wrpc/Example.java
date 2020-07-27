@@ -14,6 +14,9 @@ public class Example {
             log.info("response: {}", response);
         }
 
+        client.call(HelloWorldService.class, "hello", "invoked by call")
+                .thenAccept(v -> log.info("requestId[{}] invoked by call: {}", v.getRequestId(), v.getResult()));
+
         client.stop();
     }
 }

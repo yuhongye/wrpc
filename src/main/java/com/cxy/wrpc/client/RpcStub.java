@@ -1,12 +1,14 @@
 package com.cxy.wrpc.client;
 
 import com.cxy.wrpc.protocol.RpcRequest;
+import com.cxy.wrpc.protocol.RpcResponse;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
 
 import java.lang.reflect.Method;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 将client的方法调用转成rpc request；将rpc response转成方法返回
@@ -26,10 +28,10 @@ public class RpcStub implements MethodInterceptor {
         // 2. send request
         RpcClientHandler handler = ConnectionManager.getInstance().chooseHandler();
         log.info("request will send to {}", handler);
-        RPCFuture future = handler.sendRequest(request);
+        CompletableFuture<RpcResponse> future = handler.sendRequest(request);
 
-        // 3. receive response
-        return future.get();
+        // 3. receive response, todo: 考虑更周全
+        return future.thenApply(RpcResponse::getResult).get();
     }
 
     private RpcRequest buildRequest(Method method, Object[] args) {

@@ -1,6 +1,7 @@
 package com.cxy.wrpc.client;
 
 import com.cxy.wrpc.protocol.RpcRequest;
+import com.cxy.wrpc.protocol.RpcResponse;
 import com.cxy.wrpc.registry.ServiceDiscovery;
 import com.cxy.wrpc.utils.ClassTypes;
 import com.cxy.wrpc.utils.GlobleExecutor;
@@ -10,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.sf.cglib.proxy.Enhancer;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 创建rpc proxy的入口
@@ -40,7 +42,7 @@ public class RpcClient {
     /**
      * 网络调用，返回future
      */
-    public RPCFuture call(Class<?> service, String methodName, Object... args) {
+    public CompletableFuture<RpcResponse> call(Class<?> service, String methodName, Object... args) {
         RpcRequest request = RpcRequest.builder()
                 .requestId(UUID.randomUUID().toString())
                 .className(service.getName())

@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -20,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 public class RpcClientHandler extends SimpleChannelInboundHandler<RpcResponse> {
-    private ConcurrentHashMap<String, RPCFuture> pendingRpc = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, CompletableFuture<RpcResponse>> pendingRpc = new ConcurrentHashMap<>();
 
     @Getter
     private volatile Channel channel;
@@ -44,19 +45,22 @@ public class RpcClientHandler extends SimpleChannelInboundHandler<RpcResponse> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, RpcResponse response) throws Exception {
-        log.info("===========receive response: {}", response);
         String requestId = response.getRequestId();
-        RPCFuture future = pendingRpc.get(requestId);
+        CompletableFuture<RpcResponse> future = pendingRpc.get(requestId);
         if (future != null) {
             pendingRpc.remove(requestId);
-            future.done(response);
+            future.complete(response);
+            log.info("complete requestId[{}], response success ? ", requestId, response.isOK());
+        } else {
+            log.warn("requestId[{}] rpc call finished, but can not found future. the response detail: {}",
+                    requestId, response);
         }
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         log.info("Channel Inactive. still wait result request number: {}", pendingRpc.size());
-        pendingRpc.forEach((reqId, f) -> f.done(new RpcResponse(reqId, "连接断开")));
+        pendingRpc.forEach((reqId, f) -> f.complete(new RpcResponse(reqId, "连接断开")));
         pendingRpc.clear();
         ctx.fireChannelActive();
     }
@@ -72,8 +76,8 @@ public class RpcClientHandler extends SimpleChannelInboundHandler<RpcResponse> {
         log.info("channel closed.");
     }
 
-    public RPCFuture sendRequest(RpcRequest request) {
-        RPCFuture future = new RPCFuture(request);
+    public CompletableFuture<RpcResponse> sendRequest(RpcRequest request) {
+        CompletableFuture<RpcResponse> future = new CompletableFuture<>();
         pendingRpc.put(request.getRequestId(), future);
         channel.writeAndFlush(request);
         return future;
